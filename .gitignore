@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment & Secrets
+.env
+*.env
+credentials.json
+token.json
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*_temp.png
+
+# Test files
+test_invoice.pdf
+test_*.py
+*.Zone.Identifier
+*.Zone.Identifier
+*.Zone.Identifier

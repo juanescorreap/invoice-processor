@@ -1,0 +1,41 @@
+# Core
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Pydantic
+pydantic
+pydantic-settings
+
+# Claude API
+anthropic
+
+# Supabase
+supabase
+
+# Google Drive API
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+
+# Async
+aiofiles
+
+# Scheduling
+APScheduler
+
+# Utils
+python-dotenv
+python-dateutil
+
+# Fuzzy matching
+python-Levenshtein
+thefuzz
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+
+# Utils
+requests
