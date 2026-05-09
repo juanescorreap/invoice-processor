@@ -7,8 +7,8 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 from uuid import UUID
 
-from app.services.ocr_service_mock import get_ocr_service
-from app.services.ner_service_mock import get_ner_service
+from app.services.ocr_service import get_ocr_service
+from app.services.ner_service import get_ner_service
 from app.services.database_service import DatabaseService
 from app.models import ProcessingStatus
 from app.utils.logger import get_logger
