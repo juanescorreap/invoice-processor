@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     # ============================================================================
     GOOGLE_DRIVE_CREDENTIALS_PATH: str = "./credentials.json"
     GOOGLE_DRIVE_TOKEN_PATH: str = "./token.json"
-    GOOGLE_DRIVE_FOLDER_IDS: List[str] = []  # Lista de carpetas a monitorear
+    GOOGLE_DRIVE_FOLDER_IDS: List[str] = Field(default=[], env='GOOGLE_DRIVE_FOLDER_IDS')  # Lista de carpetas a monitorear
     GOOGLE_DRIVE_SCOPES: List[str] = [
         "https://www.googleapis.com/auth/drive.readonly"
     ]
