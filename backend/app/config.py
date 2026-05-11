@@ -1,8 +1,10 @@
 """
 Configuración del sistema de procesamiento de facturas
 """
-from pydantic import Field, Validator
+from typing import List, Optional
+from pydantic import Field
 from pydantic_settings import BaseSettings
+import os
 from typing import List, Optional
 from functools import lru_cache
 
