@@ -20,7 +20,7 @@ class ProductNormalizationService:
     def __init__(self, db_service: Optional[DatabaseService] = None):
         """Inicializar servicio"""
         self.db = db_service or DatabaseService()
-        self.similarity_threshold = 85  # Score mínimo para considerar match
+        self.similarity_threshold = 70  # Score mínimo para considerar match
         
     def normalize_product_name(self, raw_name: str) -> str:
         """
