@@ -34,35 +34,62 @@ class GoogleDriveService:
     
     def _authenticate(self):
         """
-        Autenticar con Google Drive usando OAuth 2.0
+        Autenticar con Google Drive usando Service Account (producción) u OAuth (desarrollo)
         """
-        token_path = settings.GOOGLE_DRIVE_TOKEN_PATH
-        creds_path = settings.GOOGLE_DRIVE_CREDENTIALS_PATH
-        
-        # Verificar si ya existe token
-        if os.path.exists(token_path):
-            logger.info("Token existente encontrado")
-            self.creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-        
-        # Si no hay credenciales válidas, obtenerlas
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                logger.info("Refrescando token expirado")
-                self.creds.refresh(Request())
-            else:
-                logger.info("Iniciando flujo OAuth...")
-                flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
-                logger.info("✅ Autenticación exitosa")
+        try:
+            # OPCIÓN 1: Service Account (Producción - Railway)
+            service_account_json = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON')
+            if service_account_json:
+                logger.info("🔐 Using Service Account credentials (Production)")
+                import json
+                from google.oauth2 import service_account
+                
+                # Parse JSON from environment variable
+                sa_info = json.loads(service_account_json)
+                
+                self.creds = service_account.Credentials.from_service_account_info(
+                    sa_info,
+                    scopes=SCOPES
+                )
+                
+                # Crear servicio
+                self.service = build('drive', 'v3', credentials=self.creds)
+                logger.info("✅ Google Drive Service inicializado (Service Account)")
+                return
             
-            # Guardar credenciales para siguiente uso
-            with open(token_path, 'w') as token:
-                token.write(self.creds.to_json())
-            logger.info(f"Token guardado en: {token_path}")
-        
-        # Crear servicio
-        self.service = build('drive', 'v3', credentials=self.creds)
-        logger.info("✅ Google Drive Service inicializado")
+            # OPCIÓN 2: OAuth Flow (Desarrollo Local)
+            logger.info("🔐 Using OAuth flow (Development)")
+            token_path = settings.GOOGLE_DRIVE_TOKEN_PATH
+            creds_path = settings.GOOGLE_DRIVE_CREDENTIALS_PATH
+            
+            # Verificar si ya existe token
+            if os.path.exists(token_path):
+                logger.info("Token existente encontrado")
+                self.creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+            
+            # Si no hay credenciales válidas, obtenerlas
+            if not self.creds or not self.creds.valid:
+                if self.creds and self.creds.expired and self.creds.refresh_token:
+                    logger.info("Refrescando token expirado")
+                    self.creds.refresh(Request())
+                else:
+                    logger.info("Iniciando flujo OAuth...")
+                    flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+                    self.creds = flow.run_local_server(port=0)
+                    logger.info("✅ Autenticación exitosa")
+                
+                # Guardar credenciales para siguiente uso
+                with open(token_path, 'w') as token:
+                    token.write(self.creds.to_json())
+                logger.info(f"Token guardado en: {token_path}")
+            
+            # Crear servicio
+            self.service = build('drive', 'v3', credentials=self.creds)
+            logger.info("✅ Google Drive Service inicializado (OAuth)")
+            
+        except Exception as e:
+            logger.error(f"❌ Error authenticating with Google Drive: {e}")
+            raise GoogleDriveError(f"Authentication failed: {str(e)}")
     
     def list_files_in_folder(
         self,
