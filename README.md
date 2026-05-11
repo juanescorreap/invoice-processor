@@ -303,3 +303,51 @@ MIT License - ver `LICENSE` para detalles
 ---
 
 **Estado**: 🚧 En desarrollo activo (Día 1/7)
+
+
+
+# Invoice Processor
+
+Sistema automatizado de procesamiento de facturas con IA usando Claude API.
+
+## 🌐 URLs de Producción
+
+- **Dashboard:** https://invoice-proceappr-r3jihrpwd6abxuarcahyh2.streamlit.app
+- **Backend API:** https://invoice-processor-production-7d77.up.railway.app
+- **API Docs:** https://invoice-processor-production-7d77.up.railway.app/docs
+
+## 📊 Estado del Sistema
+
+✅ **Backend API:** Online en Railway  
+✅ **Dashboard:** Online en Streamlit Cloud  
+✅ **Database:** Supabase PostgreSQL  
+✅ **AI Engine:** Claude API (claude-sonnet-4-6)  
+✅ **Storage:** Google Drive (OAuth)
+
+## 💰 Costos Mensuales
+
+- Railway Backend: **$0** (free tier - 500 horas/mes)
+- Streamlit Dashboard: **$0** (free tier)
+- Supabase Database: **$0** (free tier)
+- Claude API: **~$1.40** (200 facturas/mes)
+- **Total: $1.40/mes**
+
+## 🚀 Uso del Sistema
+
+### Dashboard Web
+Visita: https://invoice-proceappr-r3jihrpwd6abxuarcahyh2.streamlit.app
+
+- Ver facturas procesadas en tiempo real
+- Filtrar por proveedor, tienda, fecha, estado
+- Cargar precios acordados (CSV/Excel)
+- Alertas automáticas de precios altos
+- Exportar a Excel
+
+### API REST
+Base URL: https://invoice-processor-production-7d77.up.railway.app
+
+**Endpoints principales:**
+- `POST /api/invoices/process` - Procesar factura PDF
+- `GET /api/invoices/` - Listar facturas
+- `GET /api/invoices/{id}` - Detalle de factura
+- `GET /docs` - Documentación interactiva
