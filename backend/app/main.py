@@ -4,6 +4,8 @@ FastAPI Application - Invoice Processor
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from app.routers import normalization
+
 from contextlib import asynccontextmanager
 import time
 from datetime import datetime
@@ -157,6 +159,7 @@ async def health_check():
 from app.routers import invoices
 
 app.include_router(invoices.router, prefix=f"{settings.API_PREFIX}/invoices", tags=["Invoices"])
+app.include_router(normalization.router, prefix="/api")
 
 # app.include_router(invoices.router, prefix=f"{settings.API_PREFIX}/invoices", tags=["Invoices"])
 # app.include_router(vendors.router, prefix=f"{settings.API_PREFIX}/vendors", tags=["Vendors"])
