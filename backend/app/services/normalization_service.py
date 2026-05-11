@@ -88,7 +88,7 @@ class ProductNormalizationService:
         """
         try:
             # Obtener todos los productos únicos de invoice_items
-            query = self.db.supabase.table('invoice_items').select(
+            query = self.db.client.table('invoice_items').select(
                 'vendor_product_name, invoices!inner(vendor_id)'
             )
             
@@ -147,7 +147,7 @@ class ProductNormalizationService:
             ID del producto normalizado creado
         """
         try:
-            result = self.db.supabase.table('normalized_products').insert({
+            result = self.db.client.table('normalized_products').insert({
                 'normalized_name': normalized_name,
                 'normalized_code': normalized_code,
                 'category': category,
@@ -180,7 +180,7 @@ class ProductNormalizationService:
             True si se creó exitosamente
         """
         try:
-            self.db.supabase.table('product_name_mappings').insert({
+            self.db.client.table('product_name_mappings').insert({
                 'variant_name': variant_name,
                 'vendor_id': vendor_id,
                 'normalized_product_id': normalized_product_id,
@@ -207,7 +207,7 @@ class ProductNormalizationService:
             Producto normalizado o None si no existe mapeo
         """
         try:
-            query = self.db.supabase.table('product_name_mappings').select(
+            query = self.db.client.table('product_name_mappings').select(
                 '*, normalized_products(*)'
             ).eq('variant_name', variant_name).eq('status', 'approved')
             
@@ -240,7 +240,7 @@ class ProductNormalizationService:
         """
         try:
             # Obtener todos los productos únicos sin mapeo
-            result = self.db.supabase.table('invoice_items').select(
+            result = self.db.client.table('invoice_items').select(
                 'vendor_product_name, invoices!inner(vendor_id, vendors(name))'
             ).execute()
             
