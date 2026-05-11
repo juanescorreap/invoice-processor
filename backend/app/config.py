@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     GOOGLE_DRIVE_SCOPES: List[str] = [
         "https://www.googleapis.com/auth/drive.readonly"
     ]
+
+    GOOGLE_SERVICE_ACCOUNT_JSON: Optional[str] = None
     
     # ============================================================================
     # PROCESAMIENTO

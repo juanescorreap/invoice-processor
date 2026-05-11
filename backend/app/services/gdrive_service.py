@@ -37,9 +37,11 @@ class GoogleDriveService:
         """
         Autenticar con Google Drive usando Service Account (producción) u OAuth (desarrollo)
         """
+        service_account_json = settings.GOOGLE_SERVICE_ACCOUNT_JSON
+        logger.info(f"🔍 DEBUG: GOOGLE_SERVICE_ACCOUNT_JSON exists: {service_account_json is not None}")
         try:
             # OPCIÓN 1: Service Account (Producción - Railway)
-            service_account_json = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON')
+            service_account_json = settings.GOOGLE_SERVICE_ACCOUNT_JSON
             if service_account_json:
                 logger.info("🔐 Using Service Account credentials (Production)")
                 import json
