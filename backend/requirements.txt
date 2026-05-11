@@ -39,3 +39,4 @@ httpx
 
 # Utils
 requests
+PyMuPDF==1.23.8
