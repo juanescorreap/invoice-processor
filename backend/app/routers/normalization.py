@@ -236,7 +236,11 @@ async def reject_mapping(
             "success": True,
             "message": f"Mapeo rechazado por {reviewed_by}"
         }
-
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rejecting mapping: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 # ============================================================
 # VENDOR ENDPOINTS
 # ============================================================
@@ -442,8 +446,4 @@ async def find_similar_stores(request: SimilarStoresRequest):
         logger.error(f"Error finding similar stores: {e}")
         raise HTTPException(status_code=500, detail=str(e))
             
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error rejecting mapping: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    
