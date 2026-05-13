@@ -41,7 +41,7 @@ def load_invoices():
     """
     client = init_supabase()
     
-    # Query complejo: invoices + items + distributors + stores + manufacturers + products
+    # Query complejo: invoices + items + vendors + stores
     result = client.table('invoice_items').select(
         '''
         *,
@@ -52,11 +52,9 @@ def load_invoices():
             total,
             processing_status,
             confidence_score,
-            distributors!inner(name, nit),
+            vendors!inner(name, nit),
             stores(name, code)
-        ),
-        manufacturers(name),
-        products(master_sku, master_name)
+        )
         '''
     ).execute()
     
@@ -73,16 +71,11 @@ def process_invoice_data(raw_data):
     rows = []
     for item in raw_data:
         invoice = item['invoices']
-        distributor = invoice['distributors']
+        vendor = invoice['vendors']
         store = invoice.get('stores')
-        manufacturer = item.get('manufacturers')
-        product = item.get('products')
         
         # Calcular campos
         invoice_date = pd.to_datetime(invoice['invoice_date'])
-        
-        # Usar product_name_clean si existe, sino vendor_product_name
-        product_name = item.get('product_name_clean') or item['vendor_product_name']
         
         row = {
             # Info de Invoice
@@ -96,20 +89,17 @@ def process_invoice_data(raw_data):
             'Quarter': f"Q{(invoice_date.month - 1) // 3 + 1}",
             'Año': invoice_date.year,
             
-            # Info de Distributor (antes Vendor)
-            'Distribuidor': distributor['name'],
-            
-            # Info de Manufacturer
-            'Fabricante': manufacturer['name'] if manufacturer else '',
+            # Info de Vendor
+            'Razón Social': vendor['name'],
+            'NIT': vendor['nit'],
             
             # Info de Invoice
             'Invoice #': invoice['invoice_number'],
             'Confidence': f"{invoice['confidence_score']:.0%}",
             
             # Info de Item
-            'Master SKU': product['master_sku'] if product else '',
             'Código Item': item.get('vendor_sku', 'N/A'),
-            'Nombre Item': product_name,
+            'Nombre Item': item['vendor_product_name'],
             'Cases Ordered': item['quantity'],
             'Unidades por Case': 1,  # TODO: agregar a modelo
             'Unidades Totales': item['quantity'] * 1,
@@ -145,9 +135,9 @@ st.sidebar.success(f"✅ {len(df)} items cargados")
 # Filtros
 st.sidebar.markdown("---")
 
-# Filtro por Distribuidor (antes Vendor)
-distributors = ['Todos'] + sorted(df['Distribuidor'].unique().tolist())
-selected_distributor = st.sidebar.selectbox("Distribuidor", distributors)
+# Filtro por Vendor
+vendors = ['Todos'] + sorted(df['Razón Social'].unique().tolist())
+selected_vendor = st.sidebar.selectbox("Proveedor", vendors)
 
 # Filtro por Tienda
 stores = ['Todos'] + sorted(df['Tienda'].dropna().unique().tolist())
@@ -169,8 +159,8 @@ date_to = st.sidebar.date_input("Hasta", max_date, min_value=min_date, max_value
 # Aplicar filtros
 df_filtered = df.copy()
 
-if selected_distributor != 'Todos':
-    df_filtered = df_filtered[df_filtered['Distribuidor'] == selected_distributor]
+if selected_vendor != 'Todos':
+    df_filtered = df_filtered[df_filtered['Razón Social'] == selected_vendor]
 
 if selected_store != 'Todos':
     df_filtered = df_filtered[df_filtered['Tienda'] == selected_store]
@@ -260,7 +250,7 @@ df_display['⚠️ Alerta'] = ''
 if df_precios is not None:
     # Hacer merge con precios acordados
     df_precios_clean = df_precios.rename(columns={
-        df_precios.columns[0]: 'Distribuidor',  # CAMBIADO de "Razón Social"
+        df_precios.columns[0]: 'Razón Social',
         df_precios.columns[1]: 'Código Item', 
         df_precios.columns[2]: 'Precio Acordado'
     })
@@ -270,8 +260,8 @@ if df_precios is not None:
     df_precios_clean['Código Item'] = df_precios_clean['Código Item'].astype(str)
     
     df_display = df_display.merge(
-        df_precios_clean[['Distribuidor', 'Código Item', 'Precio Acordado']],
-        on=['Distribuidor', 'Código Item'],
+        df_precios_clean[['Razón Social', 'Código Item', 'Precio Acordado']],
+        on=['Razón Social', 'Código Item'],
         how='left'
     )  
     
@@ -287,7 +277,6 @@ if df_precios is not None:
         st.warning(f"🚨 **{alertas} items con precio por encima del acordado**")
 
 # Ordenar columnas para display
-# Ordenar columnas para display
 columns_order = [
     '⚠️ Alerta',
     'Estado',
@@ -299,9 +288,8 @@ columns_order = [
     'Quarter',
     'Año',
     'Invoice #',
-    'Distribuidor',  # CAMBIADO de "Razón Social"
-    'Fabricante',    # NUEVO
-    'Master SKU',    # NUEVO
+    'Razón Social',
+    'NIT',
     'Código Item',
     'Nombre Item',
     'Cases Ordered',
