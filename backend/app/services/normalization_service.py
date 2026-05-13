@@ -300,6 +300,210 @@ class ProductNormalizationService:
             logger.error(f"Error generating normalization suggestions: {e}")
             return []
 
+# ============================================================
+    # VENDOR NORMALIZATION METHODS
+    # ============================================================
+    
+    def find_similar_vendors(
+        self,
+        vendor_name: str,
+        vendor_nit: Optional[str] = None,
+        limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Encuentra vendors similares usando fuzzy matching
+        """
+        try:
+            # Obtener todos los vendors únicos
+            result = self.db.client.table('vendors').select(
+                'id, name, nit'
+            ).execute()
+            
+            if not result.data:
+                logger.warning("No vendors found in database")
+                return []
+            
+            logger.info(f"Found {len(result.data)} vendors")
+            
+            # Calcular similitud
+            matches = []
+            for vendor in result.data:
+                # Si hay NIT y coincide exacto, score 100
+                if vendor_nit and vendor.get('nit') and vendor['nit'] == vendor_nit:
+                    matches.append({
+                        'vendor_id': vendor['id'],
+                        'vendor_name': vendor['name'],
+                        'vendor_nit': vendor.get('nit'),
+                        'similarity_score': 100.0
+                    })
+                    continue
+                
+                # Fuzzy match por nombre
+                score = self.calculate_similarity(vendor_name, vendor['name'])
+                
+                if score >= self.similarity_threshold:
+                    matches.append({
+                        'vendor_id': vendor['id'],
+                        'vendor_name': vendor['name'],
+                        'vendor_nit': vendor.get('nit'),
+                        'similarity_score': score
+                    })
+            
+            matches.sort(key=lambda x: x['similarity_score'], reverse=True)
+            return matches[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error finding similar vendors: {e}", exc_info=True)
+            return []
+    
+    def create_normalized_vendor(
+        self,
+        normalized_name: str,
+        normalized_nit: Optional[str] = None,
+        address: Optional[str] = None,
+        phone: Optional[str] = None,
+        category: Optional[str] = None
+    ) -> Optional[str]:
+        """Crea un vendor normalizado"""
+        try:
+            result = self.db.client.table('normalized_vendors').insert({
+                'normalized_name': normalized_name,
+                'normalized_nit': normalized_nit,
+                'address': address,
+                'phone': phone,
+                'category': category
+            }).execute()
+            
+            if result.data:
+                vendor_id = result.data[0]['id']
+                logger.info(f"✅ Vendor normalizado creado: {normalized_name}")
+                return vendor_id
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error creating normalized vendor: {e}")
+            return None
+    
+    def create_vendor_mapping(
+        self,
+        variant_name: str,
+        normalized_vendor_id: str,
+        variant_nit: Optional[str] = None,
+        similarity_score: Optional[float] = None,
+        status: str = 'pending'
+    ) -> bool:
+        """Crea mapeo de vendor variante a vendor normalizado"""
+        try:
+            self.db.client.table('vendor_name_mappings').insert({
+                'variant_name': variant_name,
+                'variant_nit': variant_nit,
+                'normalized_vendor_id': normalized_vendor_id,
+                'similarity_score': similarity_score,
+                'status': status
+            }).execute()
+            
+            logger.info(f"✅ Vendor mapping creado: '{variant_name}' → {normalized_vendor_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error creating vendor mapping: {e}")
+            return False
+    
+    # ============================================================
+    # STORE NORMALIZATION METHODS
+    # ============================================================
+    
+    def find_similar_stores(
+        self,
+        store_name: str,
+        limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Encuentra stores similares usando fuzzy matching
+        """
+        try:
+            # Obtener todos los stores únicos
+            result = self.db.client.table('stores').select(
+                'id, name, code, address'
+            ).execute()
+            
+            if not result.data:
+                logger.warning("No stores found in database")
+                return []
+            
+            logger.info(f"Found {len(result.data)} stores")
+            
+            # Calcular similitud
+            matches = []
+            for store in result.data:
+                score = self.calculate_similarity(store_name, store['name'])
+                
+                if score >= self.similarity_threshold:
+                    matches.append({
+                        'store_id': store['id'],
+                        'store_name': store['name'],
+                        'store_code': store.get('code'),
+                        'store_address': store.get('address'),
+                        'similarity_score': score
+                    })
+            
+            matches.sort(key=lambda x: x['similarity_score'], reverse=True)
+            return matches[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error finding similar stores: {e}", exc_info=True)
+            return []
+    
+    def create_normalized_store(
+        self,
+        normalized_name: str,
+        normalized_code: Optional[str] = None,
+        address: Optional[str] = None,
+        city: Optional[str] = None,
+        state: Optional[str] = None
+    ) -> Optional[str]:
+        """Crea un store normalizado"""
+        try:
+            result = self.db.client.table('normalized_stores').insert({
+                'normalized_name': normalized_name,
+                'normalized_code': normalized_code,
+                'address': address,
+                'city': city,
+                'state': state
+            }).execute()
+            
+            if result.data:
+                store_id = result.data[0]['id']
+                logger.info(f"✅ Store normalizado creado: {normalized_name}")
+                return store_id
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error creating normalized store: {e}")
+            return None
+    
+    def create_store_mapping(
+        self,
+        variant_name: str,
+        normalized_store_id: str,
+        similarity_score: Optional[float] = None,
+        status: str = 'pending'
+    ) -> bool:
+        """Crea mapeo de store variante a store normalizado"""
+        try:
+            self.db.client.table('store_name_mappings').insert({
+                'variant_name': variant_name,
+                'normalized_store_id': normalized_store_id,
+                'similarity_score': similarity_score,
+                'status': status
+            }).execute()
+            
+            logger.info(f"✅ Store mapping creado: '{variant_name}' → {normalized_store_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error creating store mapping: {e}")
+            return False
 
 # Singleton
 _normalization_service: Optional[ProductNormalizationService] = None
