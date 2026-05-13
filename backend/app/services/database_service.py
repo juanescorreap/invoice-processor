@@ -202,10 +202,19 @@ class DatabaseService:
                     'unit_price': float(item.unit_price),
                     'line_total': float(item.line_total),
                     'line_number': idx,
-                    'matched': False  # Por ahora sin mapeo de productos
+                    'matched': False
                 }
                 
-                self.client.table('invoice_items').insert(item_data).execute()
+                result = self.client.table('invoice_items').insert(item_data).execute()
+                item_id = result.data[0]['id']
+                
+                # AGREGAR ESTO: Extraer manufacturer
+                try:
+                    from app.services.manufacturer_extraction_service import get_manufacturer_service
+                    mfr_service = get_manufacturer_service()
+                    mfr_service.process_invoice_item(item_id, item.product_name)
+                except Exception as e:
+                    logger.warning(f"No se pudo extraer manufacturer: {e}")
             
             logger.info(f"✅ Invoice {invoice_id} creada con {len(ner_response.items)} items")
             return invoice_id
