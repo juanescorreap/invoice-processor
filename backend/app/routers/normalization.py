@@ -236,7 +236,212 @@ async def reject_mapping(
             "success": True,
             "message": f"Mapeo rechazado por {reviewed_by}"
         }
+
+# ============================================================
+# VENDOR ENDPOINTS
+# ============================================================
+
+class NormalizedVendorCreate(BaseModel):
+    normalized_name: str = Field(..., description="Nombre normalizado del vendor")
+    normalized_nit: Optional[str] = Field(None, description="NIT normalizado")
+    address: Optional[str] = Field(None)
+    phone: Optional[str] = Field(None)
+    category: Optional[str] = Field(None)
+
+
+class VendorMappingCreate(BaseModel):
+    variant_name: str = Field(..., description="Nombre variante del vendor")
+    normalized_vendor_id: str = Field(..., description="ID del vendor normalizado")
+    variant_nit: Optional[str] = Field(None, description="NIT variante")
+    similarity_score: Optional[float] = Field(None, ge=0, le=100)
+    status: str = Field("pending")
+
+
+class SimilarVendorsRequest(BaseModel):
+    vendor_name: str = Field(..., description="Nombre del vendor a buscar")
+    vendor_nit: Optional[str] = Field(None, description="NIT del vendor (opcional)")
+    limit: int = Field(5, ge=1, le=20)
+
+
+@router.post("/vendors", summary="Crear vendor normalizado")
+async def create_normalized_vendor(vendor: NormalizedVendorCreate):
+    """Crea un nuevo vendor normalizado"""
+    try:
+        service = get_normalization_service()
         
+        vendor_id = service.create_normalized_vendor(
+            normalized_name=vendor.normalized_name,
+            normalized_nit=vendor.normalized_nit,
+            address=vendor.address,
+            phone=vendor.phone,
+            category=vendor.category
+        )
+        
+        if not vendor_id:
+            raise HTTPException(status_code=500, detail="Failed to create normalized vendor")
+        
+        return {
+            "success": True,
+            "vendor_id": vendor_id,
+            "message": f"Vendor normalizado creado: {vendor.normalized_name}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating normalized vendor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vendors/mappings", summary="Crear mapeo de vendor")
+async def create_vendor_mapping(mapping: VendorMappingCreate):
+    """Crea un mapeo de vendor variante a vendor normalizado"""
+    try:
+        service = get_normalization_service()
+        
+        success = service.create_vendor_mapping(
+            variant_name=mapping.variant_name,
+            normalized_vendor_id=mapping.normalized_vendor_id,
+            variant_nit=mapping.variant_nit,
+            similarity_score=mapping.similarity_score,
+            status=mapping.status
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to create vendor mapping")
+        
+        return {
+            "success": True,
+            "message": f"Vendor mapping creado: '{mapping.variant_name}'"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating vendor mapping: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vendors/similar", summary="Buscar vendors similares")
+async def find_similar_vendors(request: SimilarVendorsRequest):
+    """Encuentra vendors similares usando fuzzy matching"""
+    try:
+        service = get_normalization_service()
+        
+        results = service.find_similar_vendors(
+            vendor_name=request.vendor_name,
+            vendor_nit=request.vendor_nit,
+            limit=request.limit
+        )
+        
+        return {
+            "success": True,
+            "query": request.vendor_name,
+            "results_count": len(results),
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finding similar vendors: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# STORE ENDPOINTS
+# ============================================================
+
+class NormalizedStoreCreate(BaseModel):
+    normalized_name: str = Field(..., description="Nombre normalizado del store")
+    normalized_code: Optional[str] = Field(None, description="Código normalizado")
+    address: Optional[str] = Field(None)
+    city: Optional[str] = Field(None)
+    state: Optional[str] = Field(None)
+
+
+class StoreMappingCreate(BaseModel):
+    variant_name: str = Field(..., description="Nombre variante del store")
+    normalized_store_id: str = Field(..., description="ID del store normalizado")
+    similarity_score: Optional[float] = Field(None, ge=0, le=100)
+    status: str = Field("pending")
+
+
+class SimilarStoresRequest(BaseModel):
+    store_name: str = Field(..., description="Nombre del store a buscar")
+    limit: int = Field(5, ge=1, le=20)
+
+
+@router.post("/stores", summary="Crear store normalizado")
+async def create_normalized_store(store: NormalizedStoreCreate):
+    """Crea un nuevo store normalizado"""
+    try:
+        service = get_normalization_service()
+        
+        store_id = service.create_normalized_store(
+            normalized_name=store.normalized_name,
+            normalized_code=store.normalized_code,
+            address=store.address,
+            city=store.city,
+            state=store.state
+        )
+        
+        if not store_id:
+            raise HTTPException(status_code=500, detail="Failed to create normalized store")
+        
+        return {
+            "success": True,
+            "store_id": store_id,
+            "message": f"Store normalizado creado: {store.normalized_name}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating normalized store: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stores/mappings", summary="Crear mapeo de store")
+async def create_store_mapping(mapping: StoreMappingCreate):
+    """Crea un mapeo de store variante a store normalizado"""
+    try:
+        service = get_normalization_service()
+        
+        success = service.create_store_mapping(
+            variant_name=mapping.variant_name,
+            normalized_store_id=mapping.normalized_store_id,
+            similarity_score=mapping.similarity_score,
+            status=mapping.status
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to create store mapping")
+        
+        return {
+            "success": True,
+            "message": f"Store mapping creado: '{mapping.variant_name}'"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating store mapping: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stores/similar", summary="Buscar stores similares")
+async def find_similar_stores(request: SimilarStoresRequest):
+    """Encuentra stores similares usando fuzzy matching"""
+    try:
+        service = get_normalization_service()
+        
+        results = service.find_similar_stores(
+            store_name=request.store_name,
+            limit=request.limit
+        )
+        
+        return {
+            "success": True,
+            "query": request.store_name,
+            "results_count": len(results),
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finding similar stores: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+            
     except HTTPException:
         raise
     except Exception as e:
